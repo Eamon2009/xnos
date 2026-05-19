@@ -1,4 +1,4 @@
-# iso-kernos
+# xnos
 
 <img width="774" height="474" alt="image" src="https://github.com/user-attachments/assets/db0384c7-52bd-4388-a0bc-9ac4840ae123" />
 
