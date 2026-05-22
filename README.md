@@ -1,6 +1,6 @@
 # xnos
 
-`iso-kernos` is a zero-dependency C++17 hardware monitor with a platform-neutral core and native OS backends.
+`xnos` is a C++17 hardware monitor with a platform-neutral core and native OS backends.
 
 It currently reports CPU, memory, GPU basics, and battery where supported. Missing values are represented as `N/A` in terminal output and `null` in JSON output.
 
