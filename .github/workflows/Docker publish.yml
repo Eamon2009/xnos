@@ -21,7 +21,7 @@ concurrency:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}   # → ghcr.io/Eamon2009/xnos
+  IMAGE_NAME: ${{ github.repository }}   # normalized to lowercase in each job
 
 jobs:
   test:
@@ -66,6 +66,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Lowercase image name
+        run: echo "IMAGE_NAME=${IMAGE_NAME,,}" >> "$GITHUB_ENV"
 
       - name: Prepare platform slug
         run: |
@@ -147,6 +150,9 @@ jobs:
           path: /tmp/digests
           pattern: digest-*
           merge-multiple: true
+
+      - name: Lowercase image name
+        run: echo "IMAGE_NAME=${IMAGE_NAME,,}" >> "$GITHUB_ENV"
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
