@@ -1,4 +1,3 @@
-
 FROM ubuntu:24.04 AS builder
 
 ARG DEBIAN_FRONTEND=noninteractive
@@ -20,7 +19,6 @@ RUN cmake -B build \
       -DBUILD_TESTS=ON \
       && cmake --build build --parallel \
       && ctest --test-dir build --output-on-failure
-
 FROM ubuntu:24.04 AS dev
 
 ARG DEBIAN_FRONTEND=noninteractive
@@ -29,6 +27,7 @@ LABEL org.opencontainers.image.title="xnos"
 LABEL org.opencontainers.image.description="Zero-dependency C++17 hardware monitor – dev image"
 LABEL org.opencontainers.image.source="https://github.com/Eamon2009/xnos"
 LABEL org.opencontainers.image.licenses="MIT"
+
 RUN apt-get update && apt-get install -y --no-install-recommends \
       libstdc++6 \
       ca-certificates \
@@ -43,6 +42,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 COPY --from=builder /src/build/iso-kernos /usr/local/bin/xnos
 COPY --from=builder /src /workspace/xnos
+
 WORKDIR /workspace/xnos
+
 ENTRYPOINT ["xnos"]
 CMD ["--mode", "dashboard", "--test-mode"]
