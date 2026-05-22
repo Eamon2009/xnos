@@ -1,77 +1,62 @@
 # xnos
 
-<img width="774" height="474" alt="image" src="https://github.com/user-attachments/assets/db0384c7-52bd-4388-a0bc-9ac4840ae123" />
+`iso-kernos` is a zero-dependency C++17 hardware monitor with a platform-neutral core and native OS backends.
 
+It currently reports CPU, memory, GPU basics, and battery where supported. Missing values are represented as `N/A` in terminal output and `null` in JSON output.
 
----
+## Features
 
-## Platform support
-
-| Platform | CPU | RAM | GPU |
-|---|---|---|---|
-| Linux (AMD / Intel GPU) | `/proc/stat` delta | `/proc/meminfo` | `/sys/class/drm/cardN/device/gpu_busy_percent` + sysfs VRAM nodes |
-| Linux (NVIDIA GPU) | same | same | `nvidia-smi` fallback via `popen` — no NVML required |
-| Windows (MinGW / MSVC) | `GetSystemTimes` delta | `GlobalMemoryStatusEx` | DXGI + D3DKMT (same source as Task Manager) |
-
-Unavailable metrics return `-1` and display as `N/A`. The program never crashes on missing hardware.
-
----
-
-## How it works
-
-**CPU** — Two snapshots of idle and total CPU ticks are taken 500 ms apart. Usage is computed as:
-
-```
-Usage% = 100 × (1 − ΔIdle / ΔTotal)
-```
-
-On Linux the ticks come from `/proc/stat`. On Windows `GetSystemTimes` returns idle, kernel (which includes idle), and user times as `FILETIME` values; idle is subtracted from kernel to isolate busy kernel time.
-
-**RAM** — A single read with no sleep. On Linux, `MemTotal` and `MemAvailable` are parsed from `/proc/meminfo`; used = total − available. On Windows `GlobalMemoryStatusEx` fills a `MEMORYSTATUSEX` struct that contains `dwMemoryLoad`, `ullTotalPhys`, and `ullAvailPhys` directly.
-
-**GPU** — Linux checks `/sys/class/drm/card0` through `card3` for `gpu_busy_percent` and VRAM byte counts exposed by open-source AMD and Intel drivers. If those sysfs nodes are absent, it falls back to `popen("nvidia-smi ...")` and parses the CSV. On Windows, `CreateDXGIFactory1` enumerates adapters; VRAM usage is queried via the `IDXGIAdapter3::QueryVideoMemoryInfo` vtable slot (called through a raw COM pointer to stay MinGW-compatible), and `D3DKMTQueryStatistics` (loaded dynamically from `gdi32.dll`) gives per-node engine utilisation averaged across all GPU nodes.
-
-**Polling** — `getCpuStats()` owns the 500 ms sleep required for the CPU delta. RAM and GPU reads are instantaneous, so the overall loop cadence is naturally ≥ 500 ms with negligible CPU overhead.
-
----
-
-## Project structure 
-
-```
-iso-kernos/
-├── Monitor.hpp          # Struct definitions (CpuStats, RamStats, GpuStats)
-│                        # and HardwareMonitor class declaration.
-│                        # Included on both platforms — no OS headers here.
-│
-├── Monitor_win.cpp      # Windows-only implementation.
-│                        # Uses GetSystemTimes, GlobalMemoryStatusEx,
-│                        # DXGI + D3DKMT. All DXGI 1.4 types self-declared
-│                        # so MinGW and MSVC both compile without extra SDKs.
-│
-└── main.cpp             # Entry point. Zero OS-specific code.
-                         # Creates HardwareMonitor, calls the three stat
-                         # methods, pretty-prints in nvidia-smi table style.
-```
-
----
+- Cross-platform monitor interface with Linux, Windows, and macOS backends
+- Dashboard, compact, detailed, and JSON terminal modes
+- INI-style configuration support
+- Threshold alerts for CPU and memory
+- Optional JSON-lines logging
+- CMake build, unit tests, and GitHub Actions CI
 
 ## Build
 
-**Linux**
 ```bash
-g++ -std=c++17 -O2 main.cpp Monitor_linux.cpp -o iso-kernos
-./iso-kernos
+cmake -B build -DBUILD_TESTS=ON
+cmake --build build --parallel
+ctest --test-dir build --output-on-failure
 ```
 
-**Windows — MinGW (g++)**
-```powershell
-g++ -std=c++17 -O2 main.cpp Monitor_win.cpp -o iso-kernos.exe -ldxgi
-.\iso-kernos.exe
+On Windows with a multi-config generator, add `--config Release` or `--config Debug` to the build and test commands.
+
+## Run
+
+```bash
+./build/iso-kernos --mode dashboard
+./build/iso-kernos --compact
+./build/iso-kernos --json --duration 5
+./build/iso-kernos --test-mode --mode compact
 ```
 
-**Windows — MSVC**
-```powershell
-cl /std:c++17 /O2 main.cpp Monitor_win.cpp /link dxgi.lib kernel32.lib
-.\iso-kernos.exe
+## Options
+
+```text
+Usage: iso-kernos [OPTIONS]
+  -h, --help              Show help
+  -v, --version           Show version
+  -r, --refresh <ms>      Refresh rate in milliseconds
+  -m, --mode <mode>       dashboard|compact|detailed|json
+  -c, --config <file>     Read an INI-style config file
+  -l, --log <file>        Append JSON metrics to a log file
+      --duration <sec>    Stop after a fixed duration
+      --test-mode         Collect once and exit
+      --no-color          Disable ANSI color output
 ```
- 
+
+## Structure
+
+```text
+src/core/       Interfaces, metric types, config, factory, collector
+src/platform/   Linux, Windows, and macOS native monitor implementations
+src/display/    Terminal renderers and formatters
+src/alerts/     Threshold evaluation and JSON logging
+src/utils/      Small shared utilities
+tests/          Unit and integration tests
+docs/           Architecture, API, platform notes, contributing guide
+```
+
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and [docs/API.md](docs/API.md) for implementation details.
