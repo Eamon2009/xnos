@@ -1,0 +1,54 @@
+xnos
+====
+
+xnos is a C++17 hardware monitor with a platform-neutral core and native OS backends.It currently reports CPU, memory, GPU basics, and battery where supported. Missing values are represented as `N/A` in terminal output and `null` in JSON output.
+
+Features
+--------
+* Cross-platform monitor interface with Linux, Windows, and macOS backends
+* Dashboard, compact, detailed, and JSON terminal modes
+* INI-style configuration support
+* Threshold alerts for CPU and memory
+* Optional JSON-lines logging
+* CMake build, unit tests, and GitHub Actions CI
+
+Build
+-----
+cmake -B build -DBUILD_TESTS=ON
+cmake --build build --parallel
+ctest --test-dir build --output-on-failure
+
+On Windows with a multi-config generator, add `--config Release` or `--config Debug` to the build and test commands.
+
+Run
+---
+./build/iso-kernos --mode dashboard
+./build/iso-kernos --compact
+./build/iso-kernos --json --duration 5
+./build/iso-kernos --test-mode --mode compact
+
+Options
+======
+Usage: iso-kernos [OPTIONS]
+  -h, --help              Show help
+  -v, --version           Show version
+  -r, --refresh <ms>      Refresh rate in milliseconds
+  -m, --mode <mode>       dashboard|compact|detailed|json
+  -c, --config <file>     Read an INI-style config file
+  -l, --log <file>        Append JSON metrics to a log file
+      --duration <sec>    Stop after a fixed duration
+      --test-mode         Collect once and exit
+      --no-color          Disable ANSI color output
+
+Structure
+========
+
+src/core/       Interfaces, metric types, config, factory, collector
+src/platform/   Linux, Windows, and macOS native monitor implementations
+src/display/    Terminal renderers and formatters
+src/alerts/     Threshold evaluation and JSON logging
+src/utils/      Small shared utilities
+tests/          Unit and integration tests
+docs/           Architecture, API, platform notes, contributing guide
+
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and [docs/API.md](docs/API.md) for details.
