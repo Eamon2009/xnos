@@ -1,0 +1,29 @@
+name: CI Approval 
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  notify-approval:
+    runs-on: ubuntu-latest
+    environment:
+      name: ci-approval
+      
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Send Email Notification
+      uses: dawidd6/action-send-mail@v3
+      with:
+        server_address: smtp.gmail.com
+        server_port: 465
+        username: ${{ secrets.EMAIL_USERNAME }}
+        password: ${{ secrets.PASS }}
+        subject: "CI Deployment Notice"
+        to: eamon112009@gmail.com 
+        from: GitHub Actions Engine
+        body: "check"
